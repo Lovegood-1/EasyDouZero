@@ -1,6 +1,6 @@
 from enum import Enum, auto
 
-class CActionType(Enum):
+class CMoveType(Enum):
     TYPE_0_PASS           = auto()
     TYPE_1_SINGLE         = auto()
     TYPE_2_PAIR           = auto()
