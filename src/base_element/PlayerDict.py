@@ -1,8 +1,13 @@
 from src.base_element.Role import CRole
 from typing import Dict
+from src.base_element.Agent import CAgent
 
 class CPlayer:
-    hand_cards: list
+    # hand_cards: list
+    # angent: CAgent
+    def __init__(self, agent: CAgent):
+        self.hand_cards = []
+        self.agent = agent  # 这里可以根据实际需求设置默认的 agent，例如一个随机 agent 或者一个简单的规则 agent
 
 class CPlayerDict:
     """玩家字典数据结构，强制要求必须包含三个固定角色的玩家
