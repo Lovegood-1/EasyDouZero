@@ -1,4 +1,5 @@
 from enum import Enum, auto
+import itertools
 
 class CMoveType(Enum):
     TYPE_0_PASS           = auto()
@@ -17,3 +18,12 @@ class CMoveType(Enum):
     TYPE_13_4_2           = auto()
     TYPE_14_4_22          = auto()
     TYPE_15_WRONG         = auto()
+
+# global parameters
+MIN_SINGLE_CARDS = 5
+MIN_PAIRS = 3
+MIN_TRIPLES = 2
+
+# return all possible results of selecting num cards from cards list
+def select(cards, num):
+    return [list(i) for i in itertools.combinations(cards, num)]
