@@ -38,8 +38,14 @@ def test_env_pipeline():
         # 打印当前所有玩家的手牌和身份
         for role, player in game.players.items():
             print(f"玩家 {role} 的手牌: {player.hand_cards}")
-        actions = game.cur_legal_actions()
-        action = actions[-1]
+        
+        # 获取 action
+        # observation = CObservation(game.cur_legal_actions(), game.record, game.current_player.hand_cards)
+        role = game.current_player.role
+        observation = ConvertToRoleObservation(role, game.cur_legal_actions(), game.record, game.current_player.hand_cards)
+        game.current_player.agent.select_action(observation)  # 这里假设玩家对象有一个 agent 属性，agent 有一个 select_action 方法 
+
+        
         print(f"当前玩家: {game.current_player}, 上次出牌: {game.last_play_cards}, 可出牌: {actions}")
         print(f"默认选择第一种可出的牌进行出牌：{action}")
         game.step(action)

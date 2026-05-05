@@ -2,6 +2,7 @@ from src.base_element.GameMode import CGameMode
 from src.base_element.EnvState import CEnvState
 from src.game.CardInit import InitCard
 from src.base_element.Role import CRole
+from src.base_element.Record import CRecord
 from src.move.generate import gen_moves_by_hand_cards_and_trival
 
 class CEnv(object):
@@ -14,25 +15,25 @@ class CEnv(object):
         # 初始状态为 IDLE
         self.state = CEnvState.IDLE
         # 游戏状态变量在 start() 中初始化
-        self.step_count = None
 
 
     def start(self):
         """游戏开始，进行发牌等初始化步骤
         
         Raises:
-            RuntimeError: 如果游戏已经开始（状态不是 IDLE）
+            RuntimeError: 如果游戏已经开始（状态不是 IDLE)
         """
         if self.state != CEnvState.IDLE:
             raise RuntimeError(f"无法开始游戏：当前状态为 {self.state.name}，只能从 IDLE 状态开始游戏")
         
         print("游戏开始，正在发牌...")
         # 初始化游戏状态
-        self.step_count = 0
+
         self.state = CEnvState.PLAYING
         self.current_player = CRole.LANDLORD
         self.last_play_cards = {'role': None, 'cards': []}  # 记录上次出牌的玩家角色和牌
         self._init_hand_cards()
+        self.record = CRecord(self.three_landlord_cards)  # 初始化游戏记录对象
 
     def step(self, action):
         """游戏进行一步，玩家出牌等
@@ -46,14 +47,17 @@ class CEnv(object):
         legal_actions = self.cur_legal_actions()
         assert action in legal_actions, f"玩家 {self.current_player} 的出牌 {action} 不合法，合法出牌列表: {legal_actions}"
         
-        # Update: 修改环境状态，例如记录玩家出牌、切换到下一个玩家等
+        # Update 1: 修改环境状态，例如记录玩家出牌、更新游戏记录
         self._update_hand_cards(self.current_player, action)
+        self._update_record(self.current_player, action)  # 更新游戏记录
+        self._update_three_landlord_cards(self.current_player, action)  # 如果玩家是地主，更新底牌状态
 
         if self._check_game_over():
             print(f"游戏结束，正在结算...，胜利者是：{self.current_player}")  # 这里可以根据实际逻辑确定胜利者角色
             self._set_game_over()
             return
 
+        # Update 2: 切换到下一个玩家
         if action:  # 如果玩家出牌不为空，则更新 last_play_cards
             self.last_play_cards = {'role': self.current_player, 'cards': action}  # 这里可以根据实际逻辑更新玩家出的牌
         self.current_player = self._next_player(self.current_player)
@@ -116,6 +120,35 @@ class CEnv(object):
                 player.hand_cards.remove(card)
             else:
                 raise ValueError(f"玩家 {player_role} 的手牌中没有 {card}，无法移除")
+
+    def _update_record(self, player_role: CRole, played_cards: list):
+        """更新游戏记录，记录玩家的出牌行为
+        
+        Args:
+        
+            player_role: 出牌玩家的角色
+            played_cards: 玩家出的牌列表
+            
+        Returns:
+            更新后的游戏记录
+        """
+        # 这里可以根据实际需求设计游戏记录的结构和更新逻辑
+        # 例如，可以记录每一步的玩家角色和出牌内容
+        self.record.update(player_role, played_cards)  # 假设 CRecord 类有一个 update 方法来更新记录
+
+        pass
+
+    def _update_three_landlord_cards(self, player_role: CRole, played_cards: list):
+        """如果玩家是地主，更新底牌状态
+        
+        Args:
+            player_role: 出牌玩家的角色
+            played_cards: 玩家出的牌列表
+        """
+        if player_role == CRole.LANDLORD:
+            for card in played_cards:
+                if card in self.three_landlord_cards:
+                    self.three_landlord_cards.remove(card)
 
     def _next_player(self, current_player: CRole) -> CRole:
         """根据当前玩家角色返回下一个玩家角色
