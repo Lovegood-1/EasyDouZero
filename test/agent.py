@@ -12,18 +12,27 @@ from src.base_element.Role import CRole
 from src.base_element.PlayerDict import CPlayer
 from src.agent.SmallAgent import CSmallAgent
 from src.agent.LargeAgent import CLargeAgent
+from src.agent.DeepLordAgent import CDeepLordAgent
+from src.agent.DeepFramerAgent import CDeepFramerAgent
+from src.model.FamerModel import CFarmerLstmModel
+from src.model.LandlordModel import CLandlordLstmModel
 
-
-def build_players():
+def build_random_players():
     return {
         CRole.LANDLORD: CPlayer(CSmallAgent()),
         CRole.LANDLORD_UP: CPlayer(CSmallAgent()),
         CRole.LANDLORD_DOWN: CPlayer(CLargeAgent()),
     }
 
-# 
+def build_deep_lord_players():
+    return {
+        CRole.LANDLORD: CPlayer(CDeepLordAgent(CRole.LANDLORD, model=CLandlordLstmModel())),
+        CRole.LANDLORD_UP: CPlayer(CDeepFramerAgent(CRole.LANDLORD_UP, model=CFarmerLstmModel())),
+        CRole.LANDLORD_DOWN: CPlayer(CDeepFramerAgent(CRole.LANDLORD_DOWN, model=CFarmerLstmModel())),
+    }
+
 def test_agent_pipeline():
-    game = CEnv(mode=CGameMode.SANDBOX, players=build_players())
+    game = CEnv(mode=CGameMode.SANDBOX, players=build_random_players())
     game.start() # 发牌等初始化步骤
     while not game.end():
         for role, player in game.players.items():
@@ -31,11 +40,24 @@ def test_agent_pipeline():
         # 打印 game records
         print(f"游戏记录: {game.record}")
         actions = game.cur_legal_actions()
-        action = game.players[game.current_player].agent.select_action(actions, game.records, None)  # 这里假设玩家对象有一个 agent 属性，agent 有一个 select_action 方法
+        action = game.players[game.current_player].agent.select_action(actions)  # 这里假设玩家对象有一个 agent 属性，agent 有一个 select_action 方法
         print(f"当前玩家: {game.current_player}, 出牌: {action}")
         game.step(action)
 
+def test_deep_agent_pipeline():
+    game = CEnv(mode=CGameMode.SANDBOX, players=build_deep_lord_players())
+    game.start() # 发牌等初始化步骤
+    while not game.end():
+        for role, player in game.players.items():
+            print(f"玩家 {role} 的手牌: {player.hand_cards}")
+        # 打印 game records
+        print(f"游戏记录: {game.record}")
+        actions = game.cur_legal_actions()
+        action = game.players[game.current_player].agent.select_action(game.players[game.current_player], actions, game.record)  # 这里假设玩家对象有一个 agent 属性，agent 有一个 select_action 方法
+        print(f"当前玩家: {game.current_player}, 出牌: {action}")
+        game.step(action)
 
 if __name__ == '__main__':
     test_agent_pipeline()
+    test_deep_agent_pipeline()
     print('test_main_env passed')

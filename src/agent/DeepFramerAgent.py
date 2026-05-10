@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 from src.base_element.Agent import CAgent
 from src.base_element.Record import CRecord
@@ -7,15 +8,17 @@ from src.utils.CardUtils import _cards2array, _get_one_hot_array, _process_actio
 
 class CDeepFramerAgent(CAgent):
 
-    def __init__(self, role: CRole):
+    def __init__(self, role: CRole, model):
         super().__init__()
         self.name = 'DeepFramerAgent'
         self.role = role
+        self.model = model
+        self.training = False  # 添加一个属性来区分训练和推理模式
 
     def select_action(self, player ,legal_actions, records: CRecord):
         input_z = torch.from_numpy(self._get_z_batch(player, legal_actions, records)).float()
         input_x = torch.from_numpy(self._get_x_batch(player, legal_actions,records)).float()
-        pred = self.model.forward(input_z, input_x).detach().numpy()
+        pred = self.model.forward(input_z, input_x, return_value=True)["values"].detach().numpy()
         best_action_index = np.argmax(pred, axis=0)[0]
         return legal_actions[best_action_index]
 
@@ -29,16 +32,16 @@ class CDeepFramerAgent(CAgent):
         hand_cards_batch = np.repeat(hand_cards[np.newaxis, :],
                                     num_legal_actions, axis=0)
         
-        other_hand_cards = []
-        if player.role == CRole.LANDLORD:
-            other_hand_cards = records.other_hand_cards[CRole.LANDLORD_UP] + records.other_hand_cards[CRole.LANDLORD_DOWN]
-        elif player.role == CRole.LANDLORD_UP:
-            other_hand_cards = records.other_hand_cards[CRole.LANDLORD] + records.other_hand_cards[CRole.LANDLORD_DOWN]
-        elif player.role == CRole.LANDLORD_DOWN:
-            other_hand_cards = records.other_hand_cards[CRole.LANDLORD] + records.other_hand_cards[CRole.LANDLORD_UP]
-        other_hand_cards = _cards2array(other_hand_cards)
-        other_hand_cards_batch = np.repeat(other_hand_cards[np.newaxis, :],
-                                        num_legal_actions, axis=0)
+        # other_hand_cards = []
+        # if player.role == CRole.LANDLORD:
+        #     other_hand_cards = records.other_hand_cards[CRole.LANDLORD_UP] + records.other_hand_cards[CRole.LANDLORD_DOWN]
+        # elif player.role == CRole.LANDLORD_UP:
+        #     other_hand_cards = records.other_hand_cards[CRole.LANDLORD] + records.other_hand_cards[CRole.LANDLORD_DOWN]
+        # elif player.role == CRole.LANDLORD_DOWN:
+        #     other_hand_cards = records.other_hand_cards[CRole.LANDLORD] + records.other_hand_cards[CRole.LANDLORD_UP]
+        # other_hand_cards = _cards2array(other_hand_cards)
+        # other_hand_cards_batch = np.repeat(other_hand_cards[np.newaxis, :],
+        #                                 num_legal_actions, axis=0)
         
         last_action = _cards2array(records.last_played_cards['cards'])
         last_action_batch = np.repeat(last_action[np.newaxis, :],
@@ -48,31 +51,31 @@ class CDeepFramerAgent(CAgent):
         for j, action in enumerate(legal_actions):
             legal_actions_batch[j] = _cards2array(action)
 
-        landlord_num_cards_left = _get_one_hot_array(records.num_cards_left_dicts[CRole.LANDLORD], 20)
+        landlord_num_cards_left = _get_one_hot_array(records.num_cards_left_dicts["landlord"], 20)
         landlord_num_cards_left_batch = np.repeat(landlord_num_cards_left[np.newaxis, :],
                                                 num_legal_actions, axis=0)
         
-        landlord_played_cards = _cards2array(records.played_cards[CRole.LANDLORD])
+        landlord_played_cards = _cards2array(records.played_cards["landlord"])
         landlord_played_cards_batch = np.repeat(landlord_played_cards[np.newaxis, :],
                                                 num_legal_actions, axis=0)
-        if player.role == CRole.LANDLORD_UP:
-            landlord_others_played_cards = _cards2array(records.played_cards[CRole.LANDLORD_DOWN])
+        if self.role == "landlord_up":
+            landlord_others_played_cards = _cards2array(records.played_cards["landlord_down"])
             landlord_others_played_cards_batch = np.repeat(landlord_others_played_cards[np.newaxis, :],
                                                     num_legal_actions, axis=0)
-            landlord_others_num_cards_left = _get_one_hot_array(records.num_cards_left_dicts[CRole.LANDLORD_DOWN], 17)
+            landlord_others_num_cards_left = _get_one_hot_array(records.num_cards_left_dicts["landlord_down"], 17)
             landlord_others_num_cards_left_batch = np.repeat(landlord_others_num_cards_left[np.newaxis, :],
                                                     num_legal_actions, axis=0)
         else:
-            landlord_others_played_cards = _cards2array(records.played_cards[CRole.LANDLORD_UP])
+            landlord_others_played_cards = _cards2array(records.played_cards["landlord_up"])
             landlord_others_played_cards_batch = np.repeat(landlord_others_played_cards[np.newaxis, :],
                                                     num_legal_actions, axis=0)
-            landlord_others_num_cards_left = _get_one_hot_array(records.num_cards_left_dicts[CRole.LANDLORD_UP], 17)
+            landlord_others_num_cards_left = _get_one_hot_array(records.num_cards_left_dicts["landlord_up"], 17)
             landlord_others_num_cards_left_batch = np.repeat(landlord_others_num_cards_left[np.newaxis, :],
                                                     num_legal_actions, axis=0)
 
         return np.hstack((
             hand_cards_batch,
-            other_hand_cards_batch,
+            # other_hand_cards_batch,
             last_action_batch,
             landlord_played_cards_batch,
             landlord_others_played_cards_batch,

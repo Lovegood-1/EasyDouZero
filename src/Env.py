@@ -134,7 +134,8 @@ class CEnv(object):
         """
         # 这里可以根据实际需求设计游戏记录的结构和更新逻辑
         # 例如，可以记录每一步的玩家角色和出牌内容
-        self.record.update(player_role, played_cards)  # 假设 CRecord 类有一个 update 方法来更新记录
+        strRole = player_role.name.lower()  # 将枚举值转换为字符串，例如 CRole.LANDLORD -> 'landlord'
+        self.record.update(strRole, played_cards)  # 假设 CRecord 类有一个 update 方法来更新记录
 
         pass
 

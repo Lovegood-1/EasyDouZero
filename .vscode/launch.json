@@ -28,6 +28,15 @@
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
             "justMyCode": true
+        },
+        {
+            "name": "Python Debugger: test/agent.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/test/agent.py",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "justMyCode": true
         }
     ]
 }

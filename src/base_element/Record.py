@@ -25,11 +25,7 @@ class CRecord:
         self.three_landlord_cards = three_landlord_cards
 
         # card_play_action_seq
-        self.card_play_action_seq = {
-            'landlord': [],
-            'landlord_up': [],
-            'landlord_down': []
-        }
+        self.card_play_action_seq = []
 
         self.last_played_cards = {
             'role': None,
@@ -52,7 +48,7 @@ class CRecord:
         # 这里可以根据实际需求设计游戏记录的结构和更新逻辑
         # 例如，可以记录每一步的玩家角色和出牌内容
         self.played_cards[player_role].extend(played_cards)  # 更新玩家的出牌记录
-        self.card_play_action_seq[player_role].append(played_cards)  # 记录玩家的出牌动作序列
+        self.card_play_action_seq.append(played_cards)  # 记录玩家的出牌动作序列
         self.num_cards_left_dicts[player_role] -= len(played_cards)  # 更新玩家剩余牌数
         self.last_played_cards = {
             'role': player_role,

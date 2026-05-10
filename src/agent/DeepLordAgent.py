@@ -1,4 +1,6 @@
 import numpy as np
+import torch
+
 from src.base_element.Agent import CAgent
 from src.base_element.Record import CRecord
 from src.base_element.Role import CRole
@@ -6,15 +8,16 @@ from src.utils.CardUtils import _cards2array, _get_one_hot_array, _process_actio
 
 class CDeepLordAgent(CAgent):
 
-    def __init__(self, role: CRole):
+    def __init__(self, role: CRole, model):
         super().__init__()
         self.name = 'DeepLordAgent'
         self.role = role
+        self.model = model
 
     def select_action(self, player ,legal_actions, records: CRecord):
         input_z = torch.from_numpy(self._get_z_batch(player, legal_actions, records)).float()
         input_x = torch.from_numpy(self._get_x_batch(player, legal_actions,records)).float()
-        pred = self.model.forward(input_z, input_x).detach().numpy()
+        pred = self.model.forward(input_z, input_x, return_value=True)['values'].detach().numpy()
         best_action_index = np.argmax(pred, axis=0)[0]
         return legal_actions[best_action_index]
 
@@ -23,21 +26,22 @@ class CDeepLordAgent(CAgent):
         # 这里可以根据 legal_actions 和 records 的结构设计输入 z_batch 的格式
         # 例如，可以将 legal_actions 转换为一个适合模型输入的张量，并结合 records 中的游戏状态信息进行处理
         # 具体的转换逻辑需要根据 legal_actions 和 CRecord 的定义来实现
+        # str_role = player.role.name.lower()  # 将枚举值转换为字符串，例如 CRole.LANDLORD -> 'landlord'
         num_legal_actions = len(legal_actions)
         hand_cards = _cards2array(player.hand_cards)
         hand_cards_batch = np.repeat(hand_cards[np.newaxis, :],
                                     num_legal_actions, axis=0)
         
-        other_hand_cards = []
-        if player.role == CRole.LANDLORD:
-            other_hand_cards = records.other_hand_cards[CRole.LANDLORD_UP] + records.other_hand_cards[CRole.LANDLORD_DOWN]
-        elif player.role == CRole.LANDLORD_UP:
-            other_hand_cards = records.other_hand_cards[CRole.LANDLORD] + records.other_hand_cards[CRole.LANDLORD_DOWN]
-        elif player.role == CRole.LANDLORD_DOWN:
-            other_hand_cards = records.other_hand_cards[CRole.LANDLORD] + records.other_hand_cards[CRole.LANDLORD_UP]
-        other_hand_cards = _cards2array(other_hand_cards)
-        other_hand_cards_batch = np.repeat(other_hand_cards[np.newaxis, :],
-                                        num_legal_actions, axis=0)
+        # other_hand_cards = []
+        # if self.role == CRole.LANDLORD:
+        #     other_hand_cards = records.other_hand_cards[CRole.LANDLORD_UP] + records.other_hand_cards[CRole.LANDLORD_DOWN]
+        # elif self.role == CRole.LANDLORD_UP:
+        #     other_hand_cards = records.other_hand_cards[CRole.LANDLORD] + records.other_hand_cards[CRole.LANDLORD_DOWN]
+        # elif self.role == CRole.LANDLORD_DOWN:
+        #     other_hand_cards = records.other_hand_cards[CRole.LANDLORD] + records.other_hand_cards[CRole.LANDLORD_UP]
+        # other_hand_cards = _cards2array(other_hand_cards)
+        # other_hand_cards_batch = np.repeat(other_hand_cards[np.newaxis, :],
+        #                                 num_legal_actions, axis=0)
         
         last_action = _cards2array(records.last_played_cards['cards'])
         last_action_batch = np.repeat(last_action[np.newaxis, :],
@@ -47,23 +51,23 @@ class CDeepLordAgent(CAgent):
         for j, action in enumerate(legal_actions):
             legal_actions_batch[j] = _cards2array(action)
 
-        landlord_up_num_cards_left = _get_one_hot_array(records.num_cards_left_dicts[CRole.LANDLORD_UP], 17)
+        landlord_up_num_cards_left = _get_one_hot_array(records.num_cards_left_dicts["landlord_up"], 17)
         landlord_up_num_cards_left_batch = np.repeat(landlord_up_num_cards_left[np.newaxis, :],
                                                 num_legal_actions, axis=0)
-        landlord_down_num_cards_left = _get_one_hot_array(records.num_cards_left_dicts[CRole.LANDLORD_DOWN], 17)
+        landlord_down_num_cards_left = _get_one_hot_array(records.num_cards_left_dicts["landlord_down"], 17)
         landlord_down_num_cards_left_batch = np.repeat(landlord_down_num_cards_left[np.newaxis, :],
                                                 num_legal_actions, axis=0)
         
-        landlord_up_played_cards = _cards2array(records.played_cards[CRole.LANDLORD_UP])
+        landlord_up_played_cards = _cards2array(records.played_cards["landlord_up"])
         landlord_up_played_cards_batch = np.repeat(landlord_up_played_cards[np.newaxis, :],
                                                 num_legal_actions, axis=0)
-        landlord_down_played_cards = _cards2array(records.played_cards[CRole.LANDLORD_DOWN])
+        landlord_down_played_cards = _cards2array(records.played_cards["landlord_down"])
         landlord_down_played_cards_batch = np.repeat(landlord_down_played_cards[np.newaxis, :],
                                                 num_legal_actions, axis=0)
 
         return np.hstack((
             hand_cards_batch,
-            other_hand_cards_batch,
+            # other_hand_cards_batch,
             last_action_batch,
             landlord_up_played_cards_batch,
             landlord_down_played_cards_batch,

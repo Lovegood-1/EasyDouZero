@@ -40,10 +40,8 @@ def test_env_pipeline():
             print(f"玩家 {role} 的手牌: {player.hand_cards}")
         
         # 获取 action
-        # observation = CObservation(game.cur_legal_actions(), game.record, game.current_player.hand_cards)
-        role = game.current_player.role
-        observation = ConvertToRoleObservation(role, game.cur_legal_actions(), game.record, game.current_player.hand_cards)
-        game.current_player.agent.select_action(observation)  # 这里假设玩家对象有一个 agent 属性，agent 有一个 select_action 方法 
+ 
+        game.current_player.agent.select_action(game.current_player, game.get_legal_actions(), game.records)  
 
         
         print(f"当前玩家: {game.current_player}, 上次出牌: {game.last_play_cards}, 可出牌: {actions}")
