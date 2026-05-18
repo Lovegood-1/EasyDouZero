@@ -32,8 +32,8 @@ def test_env_init():
 # 一般流程
 def test_env_pipeline():
     game = CEnv(mode=CGameMode.SANDBOX, players=build_players())
-    game.start() # 发牌等初始化步骤
-    while not game.end():
+    game.play_start() # 发牌等初始化步骤
+    while not game.play_end():
         # 打印是谁需要出牌，上次出牌是什么，这次可以出的牌是什么
         # 打印当前所有玩家的手牌和身份
         for role, player in game.players.items():
@@ -46,12 +46,12 @@ def test_env_pipeline():
         
         print(f"当前玩家: {game.current_player}, 上次出牌: {game.last_play_cards}, 可出牌: {actions}")
         print(f"默认选择第一种可出的牌进行出牌：{action}")
-        game.step(action)
+        game.play_step(action)
 
-# 开始阶段：测试 start() 方法是否正确初始化游戏状态（发牌和身份）
+# 开始阶段：测试 play_start() 方法是否正确初始化游戏状态（发牌和身份）
 def test_env_start():
     game = CEnv(mode=CGameMode.SANDBOX, players=build_players())
-    game.start()
+    game.play_start()
     # 打印玩家手牌和身份, 检查手牌的数量
     for role, player in game.players.items():
         if role == CRole.LANDLORD:

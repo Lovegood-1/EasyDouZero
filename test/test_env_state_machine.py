@@ -35,15 +35,15 @@ def test_normal_flow():
     print("✓ 初始状态：IDLE")
     
     # 开始游戏
-    game.start()
+    game.play_start()
     assert game.state == CEnvState.PLAYING
     assert game.step_count == 0
-    print("✓ 调用 start() 后状态：PLAYING")
+    print("✓ 调用 play_start() 后状态：PLAYING")
     
     # 执行步骤
     step_count = 0
-    while not game.end():
-        game.step()
+    while not game.play_end():
+        game.play_step()
         step_count += 1
     
     assert game.state == CEnvState.GAME_OVER
@@ -52,12 +52,12 @@ def test_normal_flow():
 
 
 def test_step_before_start():
-    """测试异常情况：未调用 start() 直接调用 step()"""
+    """测试异常情况：未调用 play_start() 直接调用 play_step()"""
     print("\n=== 测试异常：未 start 直接 step ===")
     game = CEnv(mode=CGameMode.SANDBOX, players=build_players())
     
     try:
-        game.step()
+        game.play_step()
         assert False, "应该抛出 RuntimeError"
     except RuntimeError as e:
         print(f"✓ 正确抛出异常：{e}")
@@ -65,20 +65,20 @@ def test_step_before_start():
 
 
 def test_step_after_game_over():
-    """测试异常情况：游戏结束后继续调用 step()"""
+    """测试异常情况：游戏结束后继续调用 play_step()"""
     print("\n=== 测试异常：游戏结束后调用 step ===")
     game = CEnv(mode=CGameMode.SANDBOX, players=build_players())
-    game.start()
+    game.play_start()
     
     # 执行到游戏结束
-    while not game.end():
-        game.step()
+    while not game.play_end():
+        game.play_step()
     
     assert game.state == CEnvState.GAME_OVER
     
     # 尝试在游戏结束后继续 step
     try:
-        game.step()
+        game.play_step()
         assert False, "应该抛出 RuntimeError"
     except RuntimeError as e:
         print(f"✓ 正确抛出异常：{e}")
@@ -86,16 +86,16 @@ def test_step_after_game_over():
 
 
 def test_multiple_start():
-    """测试异常情况：多次调用 start()"""
+    """测试异常情况：多次调用 play_start()"""
     print("\n=== 测试异常：多次调用 start ===")
     game = CEnv(mode=CGameMode.SANDBOX, players=build_players())
-    game.start()
+    game.play_start()
     
     assert game.state == CEnvState.PLAYING
     
     # 尝试再次 start
     try:
-        game.start()
+        game.play_start()
         assert False, "应该抛出 RuntimeError"
     except RuntimeError as e:
         print(f"✓ 正确抛出异常：{e}")

@@ -11,13 +11,9 @@ class CEnv(object):
         # 游戏模式：sandbox or competition
         self.mode = mode
         self.players = players
-        
-        # 初始状态为 IDLE
         self.state = CEnvState.IDLE
-        # 游戏状态变量在 start() 中初始化
 
-
-    def start(self):
+    def play_start(self):
         """游戏开始，进行发牌等初始化步骤
         
         Raises:
@@ -27,15 +23,14 @@ class CEnv(object):
             raise RuntimeError(f"无法开始游戏：当前状态为 {self.state.name}，只能从 IDLE 状态开始游戏")
         
         print("游戏开始，正在发牌...")
-        # 初始化游戏状态
-
         self.state = CEnvState.PLAYING
         self.current_player = CRole.LANDLORD
         self.last_play_cards = {'role': None, 'cards': []}  # 记录上次出牌的玩家角色和牌
         self._init_hand_cards()
         self.record = CRecord(self.three_landlord_cards)  # 初始化游戏记录对象
+        self.reward = {CRole.LANDLORD: 0.0, CRole.LANDLORD_UP: 0.0, CRole.LANDLORD_DOWN: 0.0}  # 初始化奖励变量
 
-    def step(self, action):
+    def play_step(self, action):
         """游戏进行一步，玩家出牌等
         
         Raises:
@@ -46,15 +41,13 @@ class CEnv(object):
         
         legal_actions = self.cur_legal_actions()
         assert action in legal_actions, f"玩家 {self.current_player} 的出牌 {action} 不合法，合法出牌列表: {legal_actions}"
-        
         # Update 1: 修改环境状态，例如记录玩家出牌、更新游戏记录
         self._update_hand_cards(self.current_player, action)
         self._update_record(self.current_player, action)  # 更新游戏记录
         self._update_three_landlord_cards(self.current_player, action)  # 如果玩家是地主，更新底牌状态
-
-        if self._check_game_over():
+        if self._check_play_over():
             print(f"游戏结束，正在结算...，胜利者是：{self.current_player}")  # 这里可以根据实际逻辑确定胜利者角色
-            self._set_game_over()
+            self._set_play_over()
             return
 
         # Update 2: 切换到下一个玩家
@@ -62,13 +55,20 @@ class CEnv(object):
             self.last_play_cards = {'role': self.current_player, 'cards': action}  # 这里可以根据实际逻辑更新玩家出的牌
         self.current_player = self._next_player(self.current_player)
 
-    def end(self):
+    def play_end(self):
         """判断游戏是否结束
         
         Returns:
             bool: 游戏是否已结束
         """
         return self.state == CEnvState.GAME_OVER
+    
+    def clear_play(self):
+        """重置游戏状态"""
+        self.state = CEnvState.IDLE
+        self.current_player = None
+        self.last_play_cards = {'role': None, 'cards': []}
+        self.reward = {CRole.LANDLORD: 0.0, CRole.LANDLORD_UP: 0.0, CRole.LANDLORD_DOWN: 0.0}
     
     def cur_legal_actions(self):
         """获取当前玩家的合法出牌列表
@@ -92,7 +92,7 @@ class CEnv(object):
         # 地主玩家获得底牌
         self.three_landlord_cards = dict_cards['three_landlord_cards']  # 三张底牌
 
-    def _check_game_over(self):
+    def _check_play_over(self):
         """检查游戏是否结束
         
         Returns:
@@ -101,11 +101,17 @@ class CEnv(object):
         # 游戏结束条件：任一玩家手牌为空
         return any(len(player.hand_cards) == 0 for player in self.players.values())
 
-    def _set_game_over(self):
+    def _set_play_over(self):
         """设置游戏结束状态"""
         self.state = CEnvState.GAME_OVER
-        self.current_player = None
-        self.last_play_cards = {'role': None, 'cards': []}
+        self.reward = {CRole.LANDLORD: 0.0, CRole.LANDLORD_UP: 0.0, CRole.LANDLORD_DOWN: 0.0}  # 可以根据实际逻辑设置奖励值
+        # self.reward[self.current_player] = 1.0  # 胜利者奖励
+        if self.current_player == CRole.LANDLORD:
+            self.reward[CRole.LANDLORD] = 1.0
+        else:
+            self.reward[CRole.LANDLORD_UP] = 1.0
+            self.reward[CRole.LANDLORD_DOWN] = 1.0
+
 
     def _update_hand_cards(self, player_role: CRole, played_cards: list):
         """更新玩家手牌，移除玩家出的牌

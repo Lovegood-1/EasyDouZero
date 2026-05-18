@@ -33,8 +33,8 @@ def build_deep_lord_players():
 
 def test_agent_pipeline():
     game = CEnv(mode=CGameMode.SANDBOX, players=build_random_players())
-    game.start() # 发牌等初始化步骤
-    while not game.end():
+    game.play_start() # 发牌等初始化步骤
+    while not game.play_end():
         for role, player in game.players.items():
             print(f"玩家 {role} 的手牌: {player.hand_cards}")
         # 打印 game records
@@ -42,12 +42,12 @@ def test_agent_pipeline():
         actions = game.cur_legal_actions()
         action = game.players[game.current_player].agent.select_action(actions)  # 这里假设玩家对象有一个 agent 属性，agent 有一个 select_action 方法
         print(f"当前玩家: {game.current_player}, 出牌: {action}")
-        game.step(action)
+        game.play_step(action)
 
 def test_deep_agent_pipeline():
     game = CEnv(mode=CGameMode.SANDBOX, players=build_deep_lord_players())
-    game.start() # 发牌等初始化步骤
-    while not game.end():
+    game.play_start() # 发牌等初始化步骤
+    while not game.play_end():
         for role, player in game.players.items():
             print(f"玩家 {role} 的手牌: {player.hand_cards}")
         # 打印 game records
@@ -55,7 +55,7 @@ def test_deep_agent_pipeline():
         actions = game.cur_legal_actions()
         action = game.players[game.current_player].agent.select_action(game.players[game.current_player], actions, game.record)  # 这里假设玩家对象有一个 agent 属性，agent 有一个 select_action 方法
         print(f"当前玩家: {game.current_player}, 出牌: {action}")
-        game.step(action)
+        game.play_step(action)
 
 if __name__ == '__main__':
     test_agent_pipeline()
